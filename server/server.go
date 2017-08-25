@@ -1,7 +1,7 @@
 package main
 
 import (
-	myhandler "example.com/graphql/handlers"
+	myhandler "github.com/davejohnston/graphql-go-tutorial/handlers"
 	"flag"
 	"github.com/golang/glog"
 	"github.com/gorilla/handlers"
@@ -21,8 +21,7 @@ func main() {
 	originsOk := handlers.AllowedOrigins([]string{os.Getenv("ORIGIN_ALLOWED")})
 	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
 
-	router.HandleFunc("/subscriptions", myhandler.WebsocketRegisterHandler())
-	//router.HandleFunc("/command", CommandHandler(ctx))
+	router.HandleFunc("/subscriptions", myhandler.WebsocketHandler())
 	router.HandleFunc("/graphql", myhandler.GraphQLHandler())
 
 	srv := &http.Server{

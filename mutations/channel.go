@@ -1,9 +1,10 @@
 package mutations
 
 import (
-	"example.com/graphql/types"
+	"github.com/davejohnston/graphql-go-tutorial/types"
 	"github.com/graphql-go/graphql"
 	"log"
+	"strconv"
 )
 
 func AddChannel() *graphql.Field {
@@ -25,7 +26,7 @@ func addChannel(params graphql.ResolveParams) (interface{}, error) {
 	id++
 
 	channel := types.Channel{
-		Id:   string(id),
+		Id:   strconv.Itoa(id),
 		Name: name,
 	}
 	types.ChannelList = append(types.ChannelList, &channel)

@@ -2,13 +2,14 @@ package mutations
 
 import (
 	"github.com/graphql-go/graphql"
-	"example.com/graphql/types"
+	"github.com/davejohnston/graphql-go-tutorial/types"
 	"log"
 	"github.com/golang/glog"
 	"strconv"
+	"sync/atomic"
 )
 
-
+var messageId uint64 = 10
 
 func AddMessage() *graphql.Field {
 	return &graphql.Field{
@@ -26,27 +27,23 @@ func AddMessage() *graphql.Field {
 func addMessage(params graphql.ResolveParams) (interface{}, error) {
 	log.Printf("Processing GraphQL Mutation addMessage %v\n", params.Args)
 
-	message := params.Args["message"].(map[string]interface{})
+	messageInput := params.Args["message"].(map[string]interface{})
 
-	channelId := message["channelId"].(string)
-	glog.Infof("Channel ID: %s", channelId)
-	text := message["text"].(string)
-	glog.Infof("Message: %s", text)
+	channelId := messageInput["channelId"].(string)
+	text := messageInput["text"].(string)
 
-	for index := range types.ChannelList {
-		if types.ChannelList[index].Id == channelId {
-			log.Printf("Found Channel [%v]", types.ChannelList[index])
+	for _, channel := range types.ChannelList {
+		if channel.Id == channelId {
+			log.Printf("Found Message Channel [%s]:[%s]\n", channel.Id, channel.Name)
 
-			channel := types.ChannelList[index]
+			// Get all the messages currently in the channel
 			messages := channel.Messages
+			// Generate Message ID
+			atomic.AddUint64(&messageId, 1)
 
-			messageId := len(messages)
-			glog.Infof("Message Size: %d", messageId)
-			messageId++
-
-			glog.Infof("Creating Message with ID: %d", messageId)
+			glog.Infof("Creating Message with ID: %d for Channel", messageId, )
 			message := types.Message {
-				Id: strconv.Itoa(messageId),
+				Id: strconv.FormatUint(messageId, 10),
 				Text: text,
 			}
 

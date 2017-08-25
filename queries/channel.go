@@ -1,12 +1,11 @@
 package queries
 
 import (
-	"example.com/graphql/types"
+	"github.com/davejohnston/graphql-go-tutorial/types"
+	"github.com/golang/glog"
 	"github.com/graphql-go/graphql"
 	"log"
 )
-
-
 
 func Channels() *graphql.Field {
 	return &graphql.Field{
@@ -28,22 +27,21 @@ func Channel() *graphql.Field {
 }
 
 func channels(params graphql.ResolveParams) (interface{}, error) {
-	log.Printf("Processing GraphQL Query Channels\n")
+	glog.Infof("Processing GraphQL Query Channels\n")
 	return types.ChannelList, nil
 }
 
 func channel(params graphql.ResolveParams) (interface{}, error) {
-	log.Printf("Processing GraphQL Query Channel [%v]\n", params.Args)
+	glog.Infof("Processing GraphQL Query Channel [%v]\n", params.Args)
 
 	channelId := params.Args["id"].(string)
 
-	for index := range types.ChannelList {
-		if types.ChannelList[index].Id == channelId {
-			log.Printf("Found Channel [%v]", types.ChannelList[index])
-			return types.ChannelList[index], nil
+	for _, channel := range types.ChannelList {
+		if channel.Id == channelId {
+			glog.Infof("Found Channel [%s] ID:%s", channel.Name, channel.Id)
+			return channel, nil
 		}
 	}
 	log.Printf("Failed to find Channel with ID [%s]", channelId)
 	return nil, nil
 }
-

@@ -2,10 +2,10 @@ package schema
 
 import (
 	"github.com/graphql-go/graphql"
-	"example.com/graphql/mutations"
-	"example.com/graphql/queries"
+	"github.com/davejohnston/graphql-go-tutorial/mutations"
+	"github.com/davejohnston/graphql-go-tutorial/queries"
 	"log"
-	"example.com/graphql/subscriptions"
+	"github.com/davejohnston/graphql-go-tutorial/subscriptions"
 )
 
 var (

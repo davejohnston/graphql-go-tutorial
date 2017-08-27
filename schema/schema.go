@@ -1,15 +1,15 @@
 package schema
 
 import (
-	"github.com/graphql-go/graphql"
 	"github.com/davejohnston/graphql-go-tutorial/mutations"
 	"github.com/davejohnston/graphql-go-tutorial/queries"
-	"log"
 	"github.com/davejohnston/graphql-go-tutorial/subscriptions"
+	"github.com/graphql-go/graphql"
+	"log"
 )
 
 var (
-	// DiscoverySchema should be used when handling graphql.go requests
+	// Schema should be used when handling graphql.go requests
 	Schema graphql.Schema
 )
 
@@ -25,7 +25,7 @@ func buildSchema() graphql.Schema {
 			Fields: mutations.GetRootFields(),
 		}),
 		Subscription: graphql.NewObject(graphql.ObjectConfig{
-			Name: 	"RootSubscription",
+			Name:   "RootSubscription",
 			Fields: subscriptions.GetRootFields(),
 		}),
 	}

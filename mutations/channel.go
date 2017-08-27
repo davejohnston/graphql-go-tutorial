@@ -7,6 +7,7 @@ import (
 	"strconv"
 )
 
+// AddChannel is a graphql query for adding new chatroom channels
 func AddChannel() *graphql.Field {
 	return &graphql.Field{
 		Type:        types.ChannelType, // the return type for this field
@@ -26,7 +27,7 @@ func addChannel(params graphql.ResolveParams) (interface{}, error) {
 	id++
 
 	channel := types.Channel{
-		Id:   strconv.Itoa(id),
+		ID:   strconv.Itoa(id),
 		Name: name,
 	}
 	types.ChannelList = append(types.ChannelList, &channel)

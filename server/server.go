@@ -1,14 +1,14 @@
 package main
 
 import (
-	myhandler "github.com/davejohnston/graphql-go-tutorial/handlers"
 	"flag"
+	myhandler "github.com/davejohnston/graphql-go-tutorial/handlers"
 	"github.com/golang/glog"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"net/http"
-	"time"
 	"os"
+	"time"
 )
 
 func main() {

@@ -7,6 +7,7 @@ import (
 	"log"
 )
 
+// Channels query returns a list of all channels
 func Channels() *graphql.Field {
 	return &graphql.Field{
 		Type:        graphql.NewList(types.ChannelType),
@@ -15,6 +16,7 @@ func Channels() *graphql.Field {
 	}
 }
 
+// Channel given a specific channel id returns a channel
 func Channel() *graphql.Field {
 	return &graphql.Field{
 		Type:        types.ChannelType, // the return type for this field
@@ -34,14 +36,14 @@ func channels(params graphql.ResolveParams) (interface{}, error) {
 func channel(params graphql.ResolveParams) (interface{}, error) {
 	glog.Infof("Processing GraphQL Query Channel [%v]\n", params.Args)
 
-	channelId := params.Args["id"].(string)
+	channelID := params.Args["id"].(string)
 
 	for _, channel := range types.ChannelList {
-		if channel.Id == channelId {
-			glog.Infof("Found Channel [%s] ID:%s", channel.Name, channel.Id)
+		if channel.ID == channelID {
+			glog.Infof("Found Channel [%s] ID:%s", channel.Name, channel.ID)
 			return channel, nil
 		}
 	}
-	log.Printf("Failed to find Channel with ID [%s]", channelId)
+	log.Printf("Failed to find Channel with ID [%s]", channelID)
 	return nil, nil
 }

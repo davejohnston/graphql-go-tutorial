@@ -2,16 +2,16 @@ package handlers
 
 import (
 	"encoding/json"
-	"github.com/davejohnston/graphql-go-tutorial/schema"
 	"fmt"
+	"github.com/davejohnston/graphql-go-tutorial/schema"
 	"github.com/golang/glog"
 	"github.com/gorilla/websocket"
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/handler"
+	"github.com/trevex/graphql-go-subscription"
+	"github.com/trevex/graphql-go-subscription/examples/pubsub"
 	"log"
 	"net/http"
-	"github.com/trevex/graphql-go-subscription"
-    "github.com/trevex/graphql-go-subscription/examples/pubsub"
 	"sync"
 )
 
@@ -23,33 +23,39 @@ var upgrader = websocket.Upgrader{
 	},
 } // use default options
 
+// GraphQLMessage defines the Query, OperationName and Variables
 type GraphQLMessage struct {
 	Query         string                 `json:"query"`
 	OperationName string                 `json:"operationName"`
 	Variables     map[string]interface{} `json:"variables"`
 }
 
+// Message defines the graphql messages sent between client and server
 //TODO this should be an enum based on the types in the graphql-ws protocol
 type Message struct {
 	Type string `json:"type"`
-	Id string `json"id"`
+	ID   string `json"id"`
 	//Payload map[string]string 	 `json:"payload"`
 	Payload GraphQLMessage `json:"payload"`
 }
 
-type SubscriptionIdMap struct {
-	GraphqlRequestId string
-	SubscriptionId subscription.SubscriptionId
+// SubscriptionIDMap provides a mapping of the id used for graphql subscriptions, to
+// the internal subscription id
+type SubscriptionIDMap struct {
+	GraphqlRequestID string                      // The graphql request id (each subscription on a socket has a new ID)
+	SubscriptionID   subscription.SubscriptionId // SubscriptionId the sub id, when we subscribe to a queue
 }
 
 var (
-	Clients   map[*websocket.Conn]SubscriptionIdMap
-	graphqlPubSub *pubsub.PubSub
+	// Clients is a map of connections to structs that map graphql request ids, to
+	// subscriptions.
+	Clients             map[*websocket.Conn]SubscriptionIDMap
+	graphqlPubSub       *pubsub.PubSub
 	subscriptionManager *subscription.SubscriptionManager
 )
 
 func init() {
-	Clients = make(map[*websocket.Conn]SubscriptionIdMap)
+	Clients = make(map[*websocket.Conn]SubscriptionIDMap)
 	graphqlPubSub = pubsub.New(4)
 	subscriptionManager = subscription.NewSubscriptionManager(subscription.SubscriptionManagerConfig{
 		Schema: schema.Schema,
@@ -58,6 +64,7 @@ func init() {
 
 }
 
+// GraphQLHandler manages all graphql requests
 func GraphQLHandler() http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 
@@ -113,17 +120,16 @@ func GraphQLHandler() http.HandlerFunc {
 	}
 }
 
-type SubscriptionMessage struct {
-	MessageAdded interface{} `json:"messageAdded"`
-
-}
-
+// WebsocketMessage is the message payload sent between
+// graphql subscription clients and servers
 type WebsocketMessage struct {
-	Type string `json:"type"`
-	Id string `json:"id"`
+	Type    string          `json:"type"`
+	ID      string          `json:"id"`
 	Payload *graphql.Result `json:"payload"`
 }
 
+// WebsocketHandler handles websocket requests.  After they have been upgraded
+// it deals with the websocket subprotocol
 func WebsocketHandler() http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		glog.Infof("Handling Websocket....")
@@ -147,15 +153,14 @@ func WebsocketHandler() http.HandlerFunc {
 
 			glog.Infof("RECV message: [%s] with type ID [%d]\n", message, mt)
 
-			var payloadResponse []byte = nil
+			var payloadResponse []byte
 
 			// Convert the message to a struct
 			var websocketMessage Message
 			_ = json.Unmarshal(message, &websocketMessage)
 			glog.Infof("received message from: [%s] - type [%s], payload [%s] with type ID [%d]\n", conn.RemoteAddr(), websocketMessage.Type, websocketMessage.Payload, mt)
 
-
-			var subId subscription.SubscriptionId
+			var subID subscription.SubscriptionId
 			if websocketMessage.Type == "connection_init" {
 				glog.Info("Received Connection Init - generating an ack")
 				// Send Ack
@@ -175,13 +180,14 @@ func WebsocketHandler() http.HandlerFunc {
 				}
 
 			} else if websocketMessage.Type == "start" {
-				glog.Warningf("Received Start - generating a subscription message for id [%s] with payload [%s]\n", websocketMessage.Id, websocketMessage.Payload)
+				glog.Warningf("Received Start - generating a subscription message for id [%s] with payload [%s]\n",
+					websocketMessage.ID, websocketMessage.Payload)
 				//query, _ := json.Marshal(websocketMessage.Payload)
 
-				subId, err = subscriptionManager.Subscribe(subscription.SubscriptionConfig{
-					Query: websocketMessage.Payload.Query,
+				subID, err = subscriptionManager.Subscribe(subscription.SubscriptionConfig{
+					Query:          websocketMessage.Payload.Query,
 					VariableValues: websocketMessage.Payload.Variables,
-					OperationName: websocketMessage.Payload.OperationName,
+					OperationName:  websocketMessage.Payload.OperationName,
 					Callback: func(result *graphql.Result) error {
 
 						fmt.Printf("Procesing Callback with Result: %v\n", result)
@@ -190,19 +196,15 @@ func WebsocketHandler() http.HandlerFunc {
 							return nil
 						}
 
-
 						payload, _ := json.Marshal(result)
 						// We would need to write this back to the channel
 						fmt.Printf("Writing payload [%s] to websocket [%s]\n", payload, conn.RemoteAddr().String())
 
-
 						websocketResponseMessage := WebsocketMessage{
 							Type:    "data",
-							Id:      websocketMessage.Id,
+							ID:      websocketMessage.ID,
 							Payload: result,
 						}
-
-
 
 						//conn.WriteMessage(1, websocketMessage)
 						mutex.Lock()
@@ -219,22 +221,21 @@ func WebsocketHandler() http.HandlerFunc {
 					fmt.Printf("Error creating subscription %s\n", err)
 				}
 
-				fmt.Printf("\t\t\t\tCreating Subscription for %d\n", subId)
+				fmt.Printf("\t\t\t\tCreating Subscription for %d\n", subID)
 
 				// Not completely thread safe, and assumes there will only ever be one
 				// subscription per websocket.
 				//
-				idMap := SubscriptionIdMap {
-					GraphqlRequestId: websocketMessage.Id,
-					SubscriptionId: subId,
-
+				idMap := SubscriptionIDMap{
+					GraphqlRequestID: websocketMessage.ID,
+					SubscriptionID:   subID,
 				}
 				Clients[conn] = idMap
 
 			} else if websocketMessage.Type == "stop" {
 				idMap := Clients[conn]
-				fmt.Printf("STOP Unsubscriving number %d......\n", idMap.SubscriptionId)
-				subscriptionManager.Unsubscribe(idMap.SubscriptionId)
+				fmt.Printf("STOP Unsubscribe number %d......\n", idMap.SubscriptionID)
+				subscriptionManager.Unsubscribe(idMap.SubscriptionID)
 			} else {
 				glog.Errorf("Received unkown message type [%s] with payload [%s]\n", websocketMessage.Type, websocketMessage.Payload)
 			}
@@ -243,7 +244,7 @@ func WebsocketHandler() http.HandlerFunc {
 
 		fmt.Printf("GOODBYE SOCKET......\n")
 		idMap := Clients[conn]
-		subscriptionManager.Unsubscribe(idMap.SubscriptionId)
+		subscriptionManager.Unsubscribe(idMap.SubscriptionID)
 		conn.Close()
 	}
 }

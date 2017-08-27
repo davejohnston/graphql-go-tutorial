@@ -1,16 +1,17 @@
 package mutations
 
 import (
-	"github.com/graphql-go/graphql"
 	"github.com/davejohnston/graphql-go-tutorial/types"
-	"log"
 	"github.com/golang/glog"
+	"github.com/graphql-go/graphql"
+	"log"
 	"strconv"
 	"sync/atomic"
 )
 
-var messageId uint64 = 10
+var messageID uint64 = 10
 
+// AddMessage is a graphql query for adding new messages to a chatroom (channel)
 func AddMessage() *graphql.Field {
 	return &graphql.Field{
 		Type:        types.MessageType, // the return type for this field
@@ -29,21 +30,21 @@ func addMessage(params graphql.ResolveParams) (interface{}, error) {
 
 	messageInput := params.Args["message"].(map[string]interface{})
 
-	channelId := messageInput["channelId"].(string)
+	channelID := messageInput["channelId"].(string)
 	text := messageInput["text"].(string)
 
 	for _, channel := range types.ChannelList {
-		if channel.Id == channelId {
-			log.Printf("Found Message Channel [%s]:[%s]\n", channel.Id, channel.Name)
+		if channel.ID == channelID {
+			log.Printf("Found Message Channel [%s]:[%s]\n", channel.ID, channel.Name)
 
 			// Get all the messages currently in the channel
 			messages := channel.Messages
 			// Generate Message ID
-			atomic.AddUint64(&messageId, 1)
+			atomic.AddUint64(&messageID, 1)
 
-			glog.Infof("Creating Message with ID: %d for Channel", messageId, )
-			message := types.Message {
-				Id: strconv.FormatUint(messageId, 10),
+			glog.Infof("Creating Message with ID: %d for Channel", messageID)
+			message := types.Message{
+				ID:   strconv.FormatUint(messageID, 10),
 				Text: text,
 			}
 
@@ -57,5 +58,3 @@ func addMessage(params graphql.ResolveParams) (interface{}, error) {
 
 	return nil, nil
 }
-
-

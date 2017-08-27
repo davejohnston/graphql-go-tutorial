@@ -98,6 +98,8 @@ func GraphQLHandler() http.HandlerFunc {
 			OperationName:  opts.OperationName,
 			RootObject:     rootValue,
 		}
+		glog.Infof("Request Options Request:[%s], Variables:[%s], OperationName:[%s]",
+		opts.Query, opts.Variables, opts.OperationName)
 
 		// If there was an error, it should be
 		// included in the result, so we send it back to the client
